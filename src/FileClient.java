@@ -106,21 +106,27 @@ public class FileClient {
         out.writeObject("/get");
         out.writeObject(fileName);
 
-        File receivedFile = (File) in.readObject();
-        if (receivedFile != null) {
-            System.out.println("Received file: " + receivedFile);
-        } else {
-            System.out.println("File not found on the server.");
+        try (FileOutputStream fileOutputStream = new FileOutputStream(fileName)) {
+            byte[] buffer = new byte[1024];
+            int bytesRead;
+
+            // Receive and write file data to the local file
+            while ((bytesRead = in.read(buffer)) != -1) {
+                fileOutputStream.write(buffer, 0, bytesRead);
+            }
+
+            System.out.println("File received: " + fileName);
         }
     }
+
 
     private static void storeFile(String fileName) throws IOException {
         if (out == null) {
             System.out.println("You are not connected to any server. Please use /join command.");
             return;
         }
-
-        File file = new File(fileName, handle);
+        File fileToStore = new File(fileName);
+        FileClass file = new FileClass(fileToStore, handle);
         out.writeObject("/store");
         out.writeObject(file);
         System.out.println("File stored: " + file);
@@ -128,11 +134,11 @@ public class FileClient {
 
     private static void listFiles() throws IOException, ClassNotFoundException {
         out.writeObject("/dir");
-        List<File> files = (List<File>) in.readObject();
+        List<FileClass> files = (List<FileClass>) in.readObject();
 
         System.out.println("Files in the server:");
-        for (File file : files) {
-            System.out.println(file);
+        for (FileClass file : files) {
+            System.out.println(file.toString());
         }
     }
 }
